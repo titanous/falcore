@@ -2,7 +2,6 @@ package upstream
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/ngmoco/falcore"
 	"io"
 	"net"
@@ -15,85 +14,18 @@ type passThruReadCloser struct {
 	io.Closer
 }
 
-type connWrapper struct {
-	conn    net.Conn
-	timeout time.Duration
-}
-
-func (cw *connWrapper) Write(b []byte) (int, error) {
-	if err := cw.conn.SetDeadline(time.Now().Add(cw.timeout)); err != nil {
-		return 0, err
-	}
-	return cw.conn.Write(b)
-}
-func (cw *connWrapper) Read(b []byte) (n int, err error)   { return cw.conn.Read(b) }
-func (cw *connWrapper) Close() error                       { return cw.conn.Close() }
-func (cw *connWrapper) LocalAddr() net.Addr                { return cw.conn.LocalAddr() }
-func (cw *connWrapper) RemoteAddr() net.Addr               { return cw.conn.RemoteAddr() }
-func (cw *connWrapper) SetDeadline(t time.Time) error      { return cw.conn.SetDeadline(t) }
-func (cw *connWrapper) SetReadDeadline(t time.Time) error  { return cw.conn.SetReadDeadline(t) }
-func (cw *connWrapper) SetWriteDeadline(t time.Time) error { return cw.conn.SetWriteDeadline(t) }
-
 type Upstream struct {
-	// The upstream host to connect to
-	Host string
-	// The port on the upstream host
-	Port int
-	// Default 60 seconds
-	Timeout time.Duration
+	Transport *UpstreamTransport
 	// Will ignore https on the incoming request and always upstream http
 	ForceHttp bool
 	// Ping URL Path-only for checking upness
 	PingPath string
-
-	transport *http.Transport
-	host      string
-	tcpaddr   *net.TCPAddr
 }
 
-func NewUpstream(host string, port int, forceHttp bool) *Upstream {
+func NewUpstream(transport *UpstreamTransport) *Upstream {
 	u := new(Upstream)
-	u.Host = host
-	u.Port = port
-	u.ForceHttp = forceHttp
-	ips, err := net.LookupIP(host)
-	var ip net.IP = nil
-	for i := range ips {
-		ip = ips[i].To4()
-		if ip != nil {
-			break
-		}
-	}
-	if err == nil && ip != nil {
-		u.tcpaddr = &net.TCPAddr{}
-		u.tcpaddr.Port = port
-		u.tcpaddr.IP = ip
-	} else {
-		falcore.Warn("Can't get IP addr for %v: %v", host, err)
-	}
-	u.Timeout = 60 * time.Second
-	u.host = fmt.Sprintf("%v:%v", u.Host, u.Port)
-
-	u.transport = &http.Transport{}
-	// This dial ignores the addr passed in and dials based on the upstream host and port
-	u.transport.Dial = func(n, addr string) (c net.Conn, err error) {
-		falcore.Fine("Dialing connection to %v", u.tcpaddr)
-		var ctcp *net.TCPConn
-		ctcp, err = net.DialTCP("tcp4", nil, u.tcpaddr)
-		if err != nil {
-			falcore.Error("Dial Failed: %v", err)
-			return
-		}
-		c = &connWrapper{conn: ctcp, timeout: u.Timeout}
-		return
-	}
-	u.transport.MaxIdleConnsPerHost = 15
+	u.Transport = transport
 	return u
-}
-
-// Alter the number of connections to multiplex with
-func (u *Upstream) SetPoolSize(size int) {
-	u.transport.MaxIdleConnsPerHost = size
 }
 
 func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) {
@@ -108,7 +40,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	before := time.Now()
 	req.Header.Set("Connection", "Keep-Alive")
 	var upstrRes *http.Response
-	upstrRes, err = u.transport.RoundTrip(req)
+	upstrRes, err = u.Transport.transport.RoundTrip(req)
 	diff := falcore.TimeDiff(before, time.Now())
 	if err == nil {
 		// Copy response over to new record.  Remove connection noise.  Add some sanity.
@@ -158,7 +90,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 			request.CurrentStage.Status = 2 // Fail
 		}
 	}
-	falcore.Debug("%s [%s] [%s] %s s=%d Time=%.4f", request.ID, req.Method, u.host, req.URL, res.StatusCode, diff)
+	falcore.Debug("%s [%s] [%s] %s s=%d Time=%.4f", request.ID, req.Method, u.Transport.host, req.URL, res.StatusCode, diff)
 	return
 }
 
@@ -172,10 +104,10 @@ func (u *Upstream) ping() (up bool, ok bool) {
 			falcore.Error("Bad Ping request: %v", err)
 			return false, true
 		}
-		res, err := u.transport.RoundTrip(request)
+		res, err := u.Transport.transport.RoundTrip(request)
 
 		if err != nil {
-			falcore.Error("Failed Ping to %v:%v: %v", u.Host, u.Port, err)
+			falcore.Error("Failed Ping to %v:%v: %v", u.Transport.host, u.Transport.port, err)
 			return false, true
 		} else {
 			res.Body.Close()
@@ -183,7 +115,7 @@ func (u *Upstream) ping() (up bool, ok bool) {
 		if res.StatusCode == 200 {
 			return true, true
 		}
-		falcore.Error("Failed Ping to %v:%v: %v", u.Host, u.Port, res.Status)
+		falcore.Error("Failed Ping to %v:%v: %v", u.Transport.host, u.Transport.port, res.Status)
 		// bad status
 		return false, true
 	}
