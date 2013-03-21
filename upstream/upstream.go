@@ -45,10 +45,14 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	if err == nil {
 		// Copy response over to new record.  Remove connection noise.  Add some sanity.
 		res = falcore.SimpleResponse(req, upstrRes.StatusCode, nil, "")
-		if upstrRes.ContentLength > 0 && upstrRes.Body != nil {
+		if upstrRes.ContentLength > 0 {
 			res.ContentLength = upstrRes.ContentLength
 			res.Body = upstrRes.Body
-		} else if upstrRes.ContentLength == 0 && upstrRes.Body != nil {
+		} else if res.ContentLength == -1 {
+			res.Body = upstrRes.Body
+			res.ContentLength = -1
+			res.TransferEncoding = []string{"chunked"}
+		} else {
 			// Any bytes?
 			var testBuf [1]byte
 			n, _ := io.ReadFull(upstrRes.Body, testBuf[:])
@@ -68,10 +72,6 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 				res.ContentLength = 0
 				res.Body = nil
 			}
-		} else if upstrRes.Body != nil {
-			res.Body = upstrRes.Body
-			res.ContentLength = -1
-			res.TransferEncoding = []string{"chunked"}
 		}
 		// Copy over headers with a few exceptions
 		res.Header = make(http.Header)
