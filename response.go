@@ -2,11 +2,11 @@ package falcore
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"encoding/json"
 )
 
 func SimpleResponse(req *http.Request, status int, headers http.Header, contentLength int64, body io.Reader) *http.Response {
@@ -42,18 +42,18 @@ func RedirectResponse(req *http.Request, url string) *http.Response {
 	return SimpleResponse(req, 302, h, 0, nil)
 }
 
-func JSONResponse(req *http.Request, status int, headers http.Header, body interface{})(*http.Response, error) {
+func JSONResponse(req *http.Request, status int, headers http.Header, body interface{}) (*http.Response, error) {
 	buf := new(bytes.Buffer)
 	if err := json.NewEncoder(buf).Encode(body); err != nil {
 		return nil, err
 	}
-	
+
 	if headers == nil {
 		headers = make(http.Header)
 	}
 	if headers.Get("Content-Type") == "" {
 		headers.Set("Content-Type", "application/json")
 	}
-	
-	return SimpleResponse(req, status, headers, int64(buf.Len()),buf), nil
+
+	return SimpleResponse(req, status, headers, int64(buf.Len()), buf), nil
 }
