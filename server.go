@@ -18,18 +18,18 @@ import (
 )
 
 type Server struct {
-	Addr             string
-	Pipeline         *Pipeline
+	Addr               string
+	Pipeline           *Pipeline
 	CompletionCallback RequestCompletionCallback
-	listener         net.Listener
-	listenerFile     *os.File
-	stopAccepting    chan int
-	handlerWaitGroup *sync.WaitGroup
-	logPrefix        string
-	AcceptReady      chan int
-	sendfile         bool
-	sockOpt          int
-	bufferPool       *bufferPool
+	listener           net.Listener
+	listenerFile       *os.File
+	stopAccepting      chan int
+	handlerWaitGroup   *sync.WaitGroup
+	logPrefix          string
+	AcceptReady        chan int
+	sendfile           bool
+	sockOpt            int
+	bufferPool         *bufferPool
 }
 
 type RequestCompletionCallback func(req *Request, res *http.Response)
@@ -221,7 +221,7 @@ func (srv *Server) handler(c net.Conn) {
 			request.appendPipelineStage(pssInit)
 			// execute the pipeline
 			if res = srv.Pipeline.execute(request); res == nil {
-				res = SimpleResponse(req, 404, nil, "Not Found")
+				res = StringResponse(req, 404, nil, "Not Found")
 			}
 			// cleanup
 			request.startPipelineStage("server.ResponseWrite")

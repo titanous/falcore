@@ -44,7 +44,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	diff := falcore.TimeDiff(before, time.Now())
 	if err == nil {
 		// Copy response over to new record.  Remove connection noise.  Add some sanity.
-		res = falcore.SimpleResponse(req, upstrRes.StatusCode, nil, "")
+		res = falcore.StringResponse(req, upstrRes.StatusCode, nil, "")
 		if upstrRes.ContentLength > 0 {
 			res.ContentLength = upstrRes.ContentLength
 			res.Body = upstrRes.Body
@@ -87,11 +87,11 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	} else {
 		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
 			falcore.Error("%s Upstream Timeout error: %v", request.ID, err)
-			res = falcore.SimpleResponse(req, 504, nil, "Gateway Timeout\n")
+			res = falcore.StringResponse(req, 504, nil, "Gateway Timeout\n")
 			request.CurrentStage.Status = 2 // Fail
 		} else {
 			falcore.Error("%s Upstream error: %v", request.ID, err)
-			res = falcore.SimpleResponse(req, 502, nil, "Bad Gateway\n")
+			res = falcore.StringResponse(req, 502, nil, "Bad Gateway\n")
 			request.CurrentStage.Status = 2 // Fail
 		}
 	}

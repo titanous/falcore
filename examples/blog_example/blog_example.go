@@ -47,7 +47,7 @@ func (f delayFilter) FilterRequest(req *falcore.Request) *http.Response {
 type helloFilter int
 
 func (f helloFilter) FilterRequest(req *falcore.Request) *http.Response {
-	return falcore.SimpleResponse(req.HttpRequest, 200, nil, "hello world!\n")
+	return falcore.StringResponse(req.HttpRequest, 200, nil, "hello world!\n")
 }
 
 var reqCB = func(req *falcore.Request, res *http.Response) {

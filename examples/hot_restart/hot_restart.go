@@ -12,7 +12,7 @@ import (
 
 // very simple request filter
 func Filter(request *falcore.Request) *http.Response {
-	return falcore.SimpleResponse(request.HttpRequest, 200, nil, "OK\n")
+	return falcore.StringResponse(request.HttpRequest, 200, nil, "OK\n")
 }
 
 // flag to accept a socket file descriptor

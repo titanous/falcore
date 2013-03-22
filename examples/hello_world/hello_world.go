@@ -33,5 +33,5 @@ func main() {
 }
 
 var helloFilter = falcore.NewRequestFilter(func(req *falcore.Request) *http.Response {
-	return falcore.SimpleResponse(req.HttpRequest, 200, nil, "hello world!")
+	return falcore.StringResponse(req.HttpRequest, 200, nil, "hello world!")
 })

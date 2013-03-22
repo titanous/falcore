@@ -22,8 +22,8 @@ import (
 //
 // 
 type Pipeline struct {
-	Upstream           *list.List
-	Downstream         *list.List
+	Upstream   *list.List
+	Downstream *list.List
 }
 
 func NewPipeline() (l *Pipeline) {
@@ -67,7 +67,7 @@ func (p *Pipeline) execute(req *Request) (res *http.Response) {
 
 	if res == nil {
 		// Error: No response was generated
-		res = SimpleResponse(req.HttpRequest, 404, nil, "Not found\n")
+		res = StringResponse(req.HttpRequest, 404, nil, "Not found\n")
 	}
 
 	p.down(req, res)

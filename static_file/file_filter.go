@@ -27,7 +27,7 @@ func (f *Filter) FilterRequest(req *falcore.Request) (res *http.Response) {
 		asset_path = asset_path[len(f.PathPrefix):]
 	} else {
 		falcore.Debug("%v doesn't match prefix %v", asset_path, f.PathPrefix)
-		res = falcore.SimpleResponse(req.HttpRequest, 404, nil, "Not found.")
+		res = falcore.StringResponse(req.HttpRequest, 404, nil, "Not found.")
 		return
 	}
 
@@ -36,7 +36,7 @@ func (f *Filter) FilterRequest(req *falcore.Request) (res *http.Response) {
 		asset_path = filepath.Join(f.BasePath, asset_path)
 	} else {
 		falcore.Error("file_filter requires a BasePath")
-		return falcore.SimpleResponse(req.HttpRequest, 500, nil, "Server Error\n")
+		return falcore.StringResponse(req.HttpRequest, 500, nil, "Server Error\n")
 	}
 
 	// Open File
