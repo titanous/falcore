@@ -56,7 +56,15 @@ func (t *UpstreamTransport) dial(n, a string)(c net.Conn, err error) {
 		falcore.Error("Dial Failed: %v", err)
 		return
 	}
-	c = &timeoutConnWrapper{conn: ctcp, timeout: t.timeout}
+
+	// FIXME: Go1 has a race that causes problems with timeouts
+	// Recommend disabling until Go1.1
+	if t.timeout > 0 {
+		c = &timeoutConnWrapper{conn: ctcp, timeout: t.timeout}
+	} else {
+		c = ctcp
+	}
+
 	return
 }
 
