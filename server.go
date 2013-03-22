@@ -20,6 +20,7 @@ import (
 type Server struct {
 	Addr             string
 	Pipeline         *Pipeline
+	CompletionCallback RequestCompletionCallback
 	listener         net.Listener
 	listenerFile     *os.File
 	stopAccepting    chan int
@@ -30,6 +31,8 @@ type Server struct {
 	sockOpt          int
 	bufferPool       *bufferPool
 }
+
+type RequestCompletionCallback func(req *Request, res *http.Response)
 
 func NewServer(port int, pipeline *Pipeline) *Server {
 	s := new(Server)
@@ -284,9 +287,9 @@ func (srv *Server) serverLogPrefix() string {
 }
 
 func (srv *Server) requestFinished(request *Request, res *http.Response) {
-	if srv.Pipeline.CompletionCallback != nil {
+	if srv.CompletionCallback != nil {
 		// Don't block the connecion for this
-		go srv.Pipeline.CompletionCallback(request, res)
+		go srv.CompletionCallback(request, res)
 	}
 }
 

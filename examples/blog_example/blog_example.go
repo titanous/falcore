@@ -18,11 +18,11 @@ func main() {
 	var filter2 helloFilter
 	pipeline.Upstream.PushBack(filter2)
 
-	// add request done callback stage
-	pipeline.CompletionCallback = reqCB
-
 	// create server on port 8000
 	server := falcore.NewServer(8000, pipeline)
+
+	// add request done callback stage
+	server.CompletionCallback = reqCB
 
 	// start the server
 	// this is normally blocking forever unless you send lifecycle commands 

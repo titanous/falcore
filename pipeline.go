@@ -24,10 +24,7 @@ import (
 type Pipeline struct {
 	Upstream           *list.List
 	Downstream         *list.List
-	CompletionCallback RequestCompletionCallback
 }
-
-type RequestCompletionCallback func(req *Request, res *http.Response)
 
 func NewPipeline() (l *Pipeline) {
 	l = new(Pipeline)
