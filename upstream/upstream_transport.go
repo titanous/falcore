@@ -70,7 +70,7 @@ func (t *UpstreamTransport) dial(n, a string) (c net.Conn, err error) {
 
 func (t *UpstreamTransport) lookupIp() (addr *net.TCPAddr, err error) {
 	// Cached tcpaddr
-	if t.tcpaddr != nil && t.tcpaddrCacheTime.Add(t.DNSCacheDuration).After(time.Now()) {
+	if t.tcpaddr != nil && (t.DNSCacheDuration == 0 || t.tcpaddrCacheTime.Add(t.DNSCacheDuration).After(time.Now())) {
 		return t.tcpaddr, nil
 	}
 
