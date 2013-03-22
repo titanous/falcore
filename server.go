@@ -260,7 +260,7 @@ func (srv *Server) handler(c net.Conn) {
 			}
 			request.finishPipelineStage()
 			request.finishRequest()
-			srv.requestFinished(request)
+			srv.requestFinished(request, res)
 
 			if res.Close {
 				keepAlive = false
@@ -283,10 +283,10 @@ func (srv *Server) serverLogPrefix() string {
 	return srv.logPrefix
 }
 
-func (srv *Server) requestFinished(request *Request) {
-	if srv.Pipeline.RequestDoneCallback != nil {
+func (srv *Server) requestFinished(request *Request, res *http.Response) {
+	if srv.Pipeline.CompletionCallback != nil {
 		// Don't block the connecion for this
-		go srv.Pipeline.RequestDoneCallback.FilterRequest(request)
+		go srv.Pipeline.CompletionCallback(request, res)
 	}
 }
 

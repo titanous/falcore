@@ -1,10 +1,10 @@
 package upstream
 
 import (
+	"errors"
+	"fmt"
 	"net"
 	"net/http"
-	"fmt"
-	"errors"
 	"time"
 
 	"github.com/ngmoco/falcore"
@@ -12,28 +12,28 @@ import (
 
 type UpstreamTransport struct {
 	DNSCacheDuration time.Duration
-	
+
 	host string
 	port int
 
-	tcpaddr   *net.TCPAddr
+	tcpaddr          *net.TCPAddr
 	tcpaddrCacheTime time.Time
 
 	transport *http.Transport
-	timeout time.Duration
+	timeout   time.Duration
 }
 
 // transport is optional.  We will override Dial
-func NewUpstreamTransport(host string, port int, timeout time.Duration, transport *http.Transport)*UpstreamTransport {
-	ut := &UpstreamTransport {
-		host: host,
-		port: port,
-		timeout: timeout,
+func NewUpstreamTransport(host string, port int, timeout time.Duration, transport *http.Transport) *UpstreamTransport {
+	ut := &UpstreamTransport{
+		host:      host,
+		port:      port,
+		timeout:   timeout,
 		transport: transport,
 	}
 	ut.DNSCacheDuration = 15 * time.Minute
-	
-	if(ut.transport == nil){
+
+	if ut.transport == nil {
 		ut.transport = &http.Transport{}
 		ut.transport.MaxIdleConnsPerHost = 15
 	}
@@ -41,14 +41,14 @@ func NewUpstreamTransport(host string, port int, timeout time.Duration, transpor
 	ut.transport.Dial = func(n, addr string) (c net.Conn, err error) {
 		return ut.dial(n, addr)
 	}
-	
+
 	return ut
 }
 
-func (t *UpstreamTransport) dial(n, a string)(c net.Conn, err error) {
+func (t *UpstreamTransport) dial(n, a string) (c net.Conn, err error) {
 	var addr *net.TCPAddr
 	addr, err = t.lookupIp()
-	
+
 	falcore.Fine("Dialing connection to %v", addr)
 	var ctcp *net.TCPConn
 	ctcp, err = net.DialTCP("tcp4", nil, addr)
@@ -68,12 +68,12 @@ func (t *UpstreamTransport) dial(n, a string)(c net.Conn, err error) {
 	return
 }
 
-func (t *UpstreamTransport) lookupIp()(addr *net.TCPAddr, err error) {
+func (t *UpstreamTransport) lookupIp() (addr *net.TCPAddr, err error) {
 	// Cached tcpaddr
 	if t.tcpaddr != nil && t.tcpaddrCacheTime.Add(t.DNSCacheDuration).After(time.Now()) {
 		return t.tcpaddr, nil
 	}
-	
+
 	ips, err := net.LookupIP(t.host)
 	var ip net.IP = nil
 
@@ -99,7 +99,7 @@ func (t *UpstreamTransport) lookupIp()(addr *net.TCPAddr, err error) {
 		errstr := fmt.Sprintf("Can't get IP addr for %v: %v", t.host, err)
 		err = errors.New(errstr)
 	}
-	
+
 	return
 }
 

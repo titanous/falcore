@@ -19,7 +19,7 @@ func main() {
 	pipeline.Upstream.PushBack(filter2)
 
 	// add request done callback stage
-	pipeline.RequestDoneCallback = reqCB
+	pipeline.CompletionCallback = reqCB
 
 	// create server on port 8000
 	server := falcore.NewServer(8000, pipeline)
@@ -50,7 +50,6 @@ func (f helloFilter) FilterRequest(req *falcore.Request) *http.Response {
 	return falcore.SimpleResponse(req.HttpRequest, 200, nil, "hello world!\n")
 }
 
-var reqCB = falcore.NewRequestFilter(func(req *falcore.Request) *http.Response {
+var reqCB = func(req *falcore.Request, res *http.Response) {
 	req.Trace() // Prints detailed stats about the request to the log
-	return nil
-})
+}
