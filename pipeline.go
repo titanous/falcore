@@ -60,7 +60,7 @@ func (p *Pipeline) execute(req *Request) (res *http.Response) {
 				break
 			}
 		default:
-			log.Printf("%v is not a RequestFilter\n", e.Value)
+			log.Printf("%v (%T) is not a RequestFilter\n", e.Value, e.Value)
 			break
 		}
 	}
