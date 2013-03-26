@@ -1,13 +1,13 @@
 package compression
 
 import (
-	"bytes"
 	"compress/flate"
 	"compress/gzip"
-	"github.com/ngmoco/falcore"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/ngmoco/falcore"
 )
 
 var DefaultTypes = []string{"text/plain", "text/html", "application/json", "text/xml"}
@@ -61,12 +61,12 @@ func (c *Filter) FilterResponse(request *falcore.Request, res *http.Response) {
 		}
 
 		var compressor io.WriteCloser
-		var buf = bytes.NewBuffer(make([]byte, 0, 1024))
+		pReader, pWriter := io.Pipe()
 		switch mode {
 		case "gzip":
-			compressor = gzip.NewWriter(buf)
+			compressor = gzip.NewWriter(pWriter)
 		case "deflate":
-			comp, err := flate.NewWriter(buf, -1)
+			comp, err := flate.NewWriter(pWriter, -1)
 			if err != nil {
 				falcore.Error("Compression Error: %v", err)
 				request.CurrentStage.Status = 1 // Skip
@@ -79,33 +79,21 @@ func (c *Filter) FilterResponse(request *falcore.Request, res *http.Response) {
 		}
 
 		// Perform compression
-		r := make([]byte, 1024)
-		var err error
-		var i int
-		for err == nil {
-			i, err = res.Body.Read(r)
-			compressor.Write(r[0:i])
-		}
-		compressor.Close()
-		res.Body.Close()
+		var rdr = res.Body
+		go func() {
+			_, err := io.Copy(compressor, rdr)
+			compressor.Close()
+			pWriter.Close()
+			rdr.Close()
+			if err != nil {
+				falcore.Error("Error compressing body: %v", err)
+			}
+		}()
 
-		res.ContentLength = int64(buf.Len())
-		res.Body = (*filteredBody)(buf)
+		res.ContentLength = -1
+		res.Body = pReader
 		res.Header.Set("Content-Encoding", mode)
 	} else {
 		request.CurrentStage.Status = 1 // Skip
 	}
-}
-
-// wrapper type for Response struct
-
-type filteredBody bytes.Buffer
-
-func (b *filteredBody) Read(byt []byte) (int, error) {
-	i, err := (*bytes.Buffer)(b).Read(byt)
-	return i, err
-}
-
-func (b filteredBody) Close() error {
-	return nil
 }
