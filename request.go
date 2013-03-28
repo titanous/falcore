@@ -129,10 +129,10 @@ func (fReq *Request) Signature() string {
 // request to the falcore logger. This is a pretty big hit to performance
 // so it should only be used for debugging or development.  The source is a
 // good example of how to get useful information out of the Request.
-func (fReq *Request) Trace() {
+func (fReq *Request) Trace(res *http.Response) {
 	reqTime := TimeDiff(fReq.StartTime, fReq.EndTime)
 	req := fReq.HttpRequest
-	Trace("%s [%s] %s%s Sig=%s Tot=%.4f", fReq.ID, req.Method, req.Host, req.URL, fReq.Signature(), reqTime)
+	Trace("%s [%s] %s%s Res=%i Sig=%s Tot=%.4f", fReq.ID, req.Method, req.Host, req.URL, res.StatusCode, fReq.Signature(), reqTime)
 	l := fReq.PipelineStageStats
 	for e := l.Front(); e != nil; e = e.Next() {
 		pss, _ := e.Value.(*PipelineStageStat)
