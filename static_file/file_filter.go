@@ -1,7 +1,7 @@
 package static_file
 
 import (
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 	"mime"
 	"net/http"
 	"os"

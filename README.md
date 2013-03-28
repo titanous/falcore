@@ -4,7 +4,7 @@ Falcore is a framework for constructing high performance, modular HTTP servers i
 
 [Read more on our blog &raquo;](http://ngenuity.ngmoco.com/2012/01/introducing-falcore-and-timber.html)
 
-[GoPkgDoc](http://gopkgdoc.appspot.com/pkg/github.com/ngmoco/falcore) hosts code documentation for this project.
+[GoPkgDoc](http://gopkgdoc.appspot.com/pkg/github.com/fitstar/falcore) hosts code documentation for this project.
 
 ## Features
 * Modular and flexible design
@@ -25,7 +25,7 @@ Falcore is a filter pipeline based HTTP server library.  You can build arbitrari
 
 Falcore is currently targeted at Go 1.0.  If you're still using Go r.60.x, you can get the last working version of falcore for r.60 using the tag `last_r60`.
 
-Check out the project into $GOROOT/src/pkg/github.com/ngmoco/falcore.  Build using the `go build` command.
+Check out the project into $GOROOT/src/pkg/github.com/fitstar/falcore.  Build using the `go build` command.
 
 ## Usage
 

@@ -1,7 +1,7 @@
 package upstream
 
 import (
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 	"net/http"
 	"sync"
 	"time"

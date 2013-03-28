@@ -2,7 +2,7 @@ package upstream
 
 import (
 	"bytes"
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 	"io"
 	"net"
 	"net/http"

@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 	"io"
 	"net"
 	"net/http"

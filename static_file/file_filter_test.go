@@ -3,7 +3,7 @@ package static_file
 import (
 	"bytes"
 	"fmt"
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 	"io"
 	"io/ioutil"
 	"log"

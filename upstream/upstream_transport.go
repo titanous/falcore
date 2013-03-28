@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 )
 
 type UpstreamTransport struct {

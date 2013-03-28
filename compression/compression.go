@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 )
 
 var DefaultTypes = []string{"text/plain", "text/html", "application/json", "text/xml"}

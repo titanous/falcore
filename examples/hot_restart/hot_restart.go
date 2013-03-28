@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 	"net/http"
 	"os"
 	"os/signal"

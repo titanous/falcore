@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ngmoco/falcore"
-	"github.com/ngmoco/falcore/compression"
-	"github.com/ngmoco/falcore/static_file"
+	"github.com/fitstar/falcore"
+	"github.com/fitstar/falcore/compression"
+	"github.com/fitstar/falcore/static_file"
 	"net/http"
 )
 

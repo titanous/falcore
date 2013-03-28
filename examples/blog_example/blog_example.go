@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/ngmoco/falcore"
+	"github.com/fitstar/falcore"
 	"math/rand"
 	"net/http"
 	"time"
