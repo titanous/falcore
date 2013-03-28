@@ -132,7 +132,7 @@ func (fReq *Request) Signature() string {
 func (fReq *Request) Trace(res *http.Response) {
 	reqTime := TimeDiff(fReq.StartTime, fReq.EndTime)
 	req := fReq.HttpRequest
-	Trace("%s [%s] %s%s Res=%i Sig=%s Tot=%.4f", fReq.ID, req.Method, req.Host, req.URL, res.StatusCode, fReq.Signature(), reqTime)
+	Trace("%s [%s] %s%s Res=%d Sig=%s Tot=%.4f", fReq.ID, req.Method, req.Host, req.URL, res.StatusCode, fReq.Signature(), reqTime)
 	l := fReq.PipelineStageStats
 	for e := l.Front(); e != nil; e = e.Next() {
 		pss, _ := e.Value.(*PipelineStageStat)
