@@ -62,6 +62,7 @@ func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Requ
 	if conn != nil {
 		fReq.RemoteAddr = conn.RemoteAddr().(*net.TCPAddr)
 	}
+
 	// create a semi-unique id to track a connection in the logs
 	// ID is the least significant decimal digits of time with some randomization
 	// the last 3 zeros of time.Nanoseconds appear to always be zero
@@ -69,6 +70,12 @@ func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Requ
 	fReq.ID = fmt.Sprintf("%010x", (ut-(ut-(ut%1e12)))+int64(rand.Intn(999)))
 	fReq.PipelineStageStats = list.New()
 	fReq.pipelineHash = crc32.NewIEEE()
+
+	// Support for 100-continue requests
+	if request.Header.Get("Expect") == "100-continue" {
+		request.Body = &continueReader{req: request, r: request.Body, conn: conn}
+	}
+
 	return fReq
 }
 
