@@ -73,7 +73,7 @@ func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Requ
 
 	// Support for 100-continue requests
 	if request.Header.Get("Expect") == "100-continue" {
-		request.Body = &continueReader{req: request, r: request.Body, conn: conn}
+		request.Body = &continueReader{req: fReq, r: request.Body}
 	}
 
 	return fReq
