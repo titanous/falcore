@@ -19,8 +19,11 @@ func (r *continueReader) Read(p []byte) (int, error) {
 	// sent 100 continue the first time we try to read the body
 	if !r.opened {
 		resp := SimpleResponse(r.req, 100, nil, 0, nil)
-		resp.Write(r.conn)
+		if err := resp.Write(r.conn); err != nil {
+			return 0, err
+		}
 		r.req = nil
+		r.opened = true
 	}
 	return r.r.Read(p)
 }
