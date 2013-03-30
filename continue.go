@@ -15,7 +15,7 @@ var _ io.ReadCloser = new(continueReader)
 func (r *continueReader) Read(p []byte) (int, error) {
 	// sent 100 continue the first time we try to read the body
 	if !r.opened {
-		resp := SimpleResponse(r.req.HttpRequest, 100, nil, 0, nil)
+		resp := ByteResponse(r.req.HttpRequest, 100, nil, make([]byte, 0))
 		if err := resp.Write(r.req.Connection); err != nil {
 			return 0, err
 		}
