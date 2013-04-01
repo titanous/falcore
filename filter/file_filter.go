@@ -1,4 +1,4 @@
-package static_file
+package filter
 
 import (
 	"github.com/fitstar/falcore"
