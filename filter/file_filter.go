@@ -11,14 +11,14 @@ import (
 
 // A falcore RequestFilter for serving static files
 // from the filesystem.
-type Filter struct {
+type FileFilter struct {
 	// File system base path for serving files
 	BasePath string
 	// Prefix in URL path
 	PathPrefix string
 }
 
-func (f *Filter) FilterRequest(req *falcore.Request) (res *http.Response) {
+func (f *FileFilter) FilterRequest(req *falcore.Request) (res *http.Response) {
 	// Clean asset path
 	asset_path := filepath.Clean(filepath.FromSlash(req.HttpRequest.URL.Path))
 
