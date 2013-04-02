@@ -271,10 +271,6 @@ func (srv *Server) handler(c net.Conn) {
 			if res.Close {
 				keepAlive = false
 			}
-
-			// Reset the startTime
-			// this isn't great since there may be lag between requests; but it's the best we've got
-			startTime = time.Now()
 		} else {
 			// EOF is socket closed
 			if nerr, ok := err.(net.Error); err != io.EOF && !(ok && nerr.Timeout()) {
