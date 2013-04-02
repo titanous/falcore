@@ -194,7 +194,7 @@ func (srv *Server) sentinel(c net.Conn, connClosed chan int) {
 }
 
 func (srv *Server) handler(c net.Conn) {
-	startTime := time.Now()
+	var startTime time.Time
 	bpe := srv.bufferPool.take(c)
 	defer srv.bufferPool.give(bpe)
 	var closeSentinelChan = make(chan int)
@@ -206,6 +206,9 @@ func (srv *Server) handler(c net.Conn) {
 	reqCount := 0
 	keepAlive := true
 	for err == nil && keepAlive {
+		if _, err := bpe.br.Peek(1); err == nil {
+			startTime = time.Now()
+		}
 		if req, err = http.ReadRequest(bpe.br); err == nil {
 			if req.Header.Get("Connection") != "Keep-Alive" {
 				keepAlive = false
