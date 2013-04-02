@@ -157,7 +157,7 @@ func (srv *Server) serve() (e error) {
 	for accept {
 		var c net.Conn
 		if l, ok := srv.listener.(*net.TCPListener); ok {
-			l.SetDeadline(time.Now().Add(3e9))
+			l.SetDeadline(time.Now().Add(3 * time.Second))
 		}
 		c, e = srv.listener.Accept()
 		if e != nil {

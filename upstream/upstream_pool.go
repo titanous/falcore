@@ -34,7 +34,7 @@ func NewUpstreamPool(name string, upstreams []*UpstreamEntry) *UpstreamPool {
 	up.nextUpstream = make(chan *UpstreamEntry)
 	up.weightMutex = new(sync.RWMutex)
 	up.shutdown = make(chan int)
-	up.pinger = time.NewTicker(3e9) // 3s
+	up.pinger = time.NewTicker(3 * time.Second) // 3s
 	up.pool = upstreams
 
 	go up.nextServer()
