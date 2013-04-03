@@ -139,14 +139,14 @@ func (fReq *Request) Signature() string {
 func (fReq *Request) Trace(res *http.Response) {
 	reqTime := TimeDiff(fReq.StartTime, fReq.EndTime)
 	req := fReq.HttpRequest
-	Trace("%s [%s] %s%s s=%v Sig=%s Tot=%.4f", fReq.ID, req.Method, req.Host, req.URL, res.StatusCode, fReq.Signature(), reqTime)
+	Trace("%s [%s] %s%s S=%v Sig=%s Tot=%.4fs", fReq.ID, req.Method, req.Host, req.URL, res.StatusCode, fReq.Signature(), reqTime)
 	l := fReq.PipelineStageStats
 	for e := l.Front(); e != nil; e = e.Next() {
 		pss, _ := e.Value.(*PipelineStageStat)
 		dur := TimeDiff(pss.StartTime, pss.EndTime)
-		Trace("%s %-30s S=%d Tot=%.4f %%=%.2f", fReq.ID, pss.Name, pss.Status, dur, dur/reqTime*100.0)
+		Trace("%s %-30s S=%d Tot=%.4fs %%=%.2f", fReq.ID, pss.Name, pss.Status, dur, dur/(reqTime*100.0))
 	}
-	Trace("%s %-30s S=0 Tot=%.4f %%=%.2f", fReq.ID, "Overhead", float32(fReq.Overhead)/1.0e9, float32(fReq.Overhead)/1.0e9/reqTime*100.0)
+	Trace("%s %-30s S=0 Tot=%.4fs %%=%.2f", fReq.ID, "Overhead", float32(fReq.Overhead)/float32(time.Second), float32(fReq.Overhead)/float32(time.Second)/reqTime*100.0)
 }
 
 func (fReq *Request) finishRequest() {

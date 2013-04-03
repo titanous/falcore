@@ -29,7 +29,7 @@ type Server struct {
 	AcceptReady        chan int
 	sendfile           bool
 	sockOpt            int
-	bufferPool         *bufferPool
+	bufferPool         *BufferPool
 }
 
 type RequestCompletionCallback func(req *Request, res *http.Response)
@@ -58,7 +58,7 @@ func NewServer(port int, pipeline *Pipeline) *Server {
 	}
 
 	// buffer pool for reusing connection bufio.Readers
-	s.bufferPool = newBufferPool(100, 8192)
+	s.bufferPool = NewBufferPool(100, 8192)
 
 	return s
 }
@@ -157,7 +157,7 @@ func (srv *Server) serve() (e error) {
 	for accept {
 		var c net.Conn
 		if l, ok := srv.listener.(*net.TCPListener); ok {
-			l.SetDeadline(time.Now().Add(3e9))
+			l.SetDeadline(time.Now().Add(3 * time.Second))
 		}
 		c, e = srv.listener.Accept()
 		if e != nil {
@@ -223,9 +223,9 @@ func (srv *Server) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 }
 
 func (srv *Server) handler(c net.Conn) {
-	startTime := time.Now()
-	bpe := srv.bufferPool.take(c)
-	defer srv.bufferPool.give(bpe)
+	var startTime time.Time
+	bpe := srv.bufferPool.Take(c)
+	defer srv.bufferPool.Give(bpe)
 	var closeSentinelChan = make(chan int)
 	go srv.sentinel(c, closeSentinelChan)
 	defer srv.connectionFinished(c, closeSentinelChan)
@@ -235,7 +235,10 @@ func (srv *Server) handler(c net.Conn) {
 	reqCount := 0
 	keepAlive := true
 	for err == nil && keepAlive {
-		if req, err = http.ReadRequest(bpe.br); err == nil {
+		if _, err := bpe.Br.Peek(1); err == nil {
+			startTime = time.Now()
+		}
+		if req, err = http.ReadRequest(bpe.Br); err == nil {
 			if req.Header.Get("Connection") != "Keep-Alive" {
 				keepAlive = false
 			}
@@ -264,10 +267,6 @@ func (srv *Server) handler(c net.Conn) {
 			if res.Close {
 				keepAlive = false
 			}
-
-			// Reset the startTime
-			// this isn't great since there may be lag between requests; but it's the best we've got
-			startTime = time.Now()
 		} else {
 			// EOF is socket closed
 			if nerr, ok := err.(net.Error); err != io.EOF && !(ok && nerr.Timeout()) {
