@@ -90,6 +90,7 @@ func TestWithRequest(request *http.Request, filter RequestFilter, context map[st
 	r.Context = context
 	t := reflect.TypeOf(filter)
 	r.startPipelineStage(t.String())
+	r.CurrentStage.Type = PipelineStageTypeUpstream
 	res := filter.FilterRequest(r)
 	r.finishPipelineStage()
 	r.finishRequest()
@@ -100,6 +101,7 @@ func TestWithRequest(request *http.Request, filter RequestFilter, context map[st
 func (fReq *Request) startPipelineStage(name string) {
 	fReq.CurrentStage = NewPiplineStage(name)
 	fReq.PipelineStageStats.PushBack(fReq.CurrentStage)
+	fReq.CurrentStage.Type = PipelineStageTypeOther
 }
 
 // Finishes the CurrentStage.
@@ -170,10 +172,21 @@ func (fReq *Request) finishRequest() {
 //   )
 type PipelineStageStat struct {
 	Name      string
+	Type      PipelineStageType
 	Status    byte
 	StartTime time.Time
 	EndTime   time.Time
 }
+
+type PipelineStageType string
+
+const (
+	PipelineStageTypeOther      PipelineStageType = "OT"
+	PipelineStageTypeUpstream   PipelineStageType = "UP"
+	PipelineStageTypeDownstream PipelineStageType = "DN"
+	PipelineStageTypeRouter     PipelineStageType = "RT"
+	PipelineStageTypeOverhead   PipelineStageType = "OH"
+)
 
 func NewPiplineStage(name string) *PipelineStageStat {
 	pss := new(PipelineStageStat)
