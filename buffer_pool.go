@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 )
 
-// uses a chan as a leaky bucket buffer pool
+// A leaky bucket buffer pool for bufio.Readers
+// Dramatically reduces garbage when you have lots of short lived
+// http connections.
 type BufferPool struct {
 	// size of buffer when creating new ones
 	bufSize int
