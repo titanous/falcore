@@ -1,11 +1,11 @@
 package router
 
 import (
+	"bytes"
 	"github.com/fitstar/falcore"
 	"net/http"
 	"regexp"
 	"testing"
-	"bytes"
 )
 
 type SimpleFilter int
@@ -17,7 +17,7 @@ func (sf SimpleFilter) FilterRequest(req *falcore.Request) *http.Response {
 
 func validGetRequest() (req *falcore.Request) {
 	tmp, _ := http.NewRequest("GET", "/hello", bytes.NewBuffer(make([]byte, 0)))
-	req, _ = falcore.TestWithRequest(tmp, falcore.NewRequestFilter(func(req *falcore.Request) *http.Response{ return nil }), nil)
+	req, _ = falcore.TestWithRequest(tmp, falcore.NewRequestFilter(func(req *falcore.Request) *http.Response { return nil }), nil)
 	return
 }
 

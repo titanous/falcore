@@ -1,8 +1,8 @@
 package router
 
 import (
-	"github.com/fitstar/falcore"
 	"container/list"
+	"github.com/fitstar/falcore"
 	"regexp"
 )
 

@@ -23,4 +23,3 @@ type genericRouter func(req *Request) (pipe RequestFilter)
 func (f genericRouter) SelectPipeline(req *Request) (pipe RequestFilter) {
 	return f(req)
 }
-
