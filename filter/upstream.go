@@ -93,16 +93,16 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 		}
 	} else {
 		if nerr, ok := err.(net.Error); ok && nerr.Timeout() {
-			falcore.Error("[%s] %s Upstream Timeout error: %v", u.Name, request.ID, err)
+			falcore.Error("%s [%s] Upstream Timeout error: %v", request.ID, u.Name, err)
 			res = falcore.StringResponse(req, 504, nil, "Gateway Timeout\n")
 			request.CurrentStage.Status = 2 // Fail
 		} else {
-			falcore.Error("[%s] %s Upstream error: %v", u.Name, request.ID, err)
+			falcore.Error("%s [%s] Upstream error: %v", request.ID, u.Name, err)
 			res = falcore.StringResponse(req, 502, nil, "Bad Gateway\n")
 			request.CurrentStage.Status = 2 // Fail
 		}
 	}
-	falcore.Debug("%s %s [%s] [%s] %s s=%d Time=%.4f", u.Name, request.ID, req.Method, u.Transport.host, req.URL, res.StatusCode, diff)
+	falcore.Debug("%s %s [%s] [%s] %s s=%d Time=%.4f", request.ID, u.Name, req.Method, u.Transport.host, req.URL, res.StatusCode, diff)
 	return
 }
 
