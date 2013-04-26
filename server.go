@@ -254,7 +254,7 @@ func (srv *Server) handler(c net.Conn) {
 			request.appendPipelineStage(pssInit)
 
 			// execute the pipeline
-			var res = srv.handlerExecutePipeline(request)
+			var res = srv.handlerExecutePipeline(request, keepAlive)
 
 			// shutting down?
 			select {
@@ -280,7 +280,7 @@ func (srv *Server) handler(c net.Conn) {
 	//Debug("%s Processed %v requests on connection %v", srv.serverLogPrefix(), reqCount, c.RemoteAddr())
 }
 
-func (srv *Server) handlerExecutePipeline(request *Request)*http.Response {
+func (srv *Server) handlerExecutePipeline(request *Request, boolean keepAlive)*http.Response {
 	var res *http.Response
 	// execute the pipeline
 	if res = srv.Pipeline.execute(request); res == nil {
@@ -300,6 +300,12 @@ func (srv *Server) handlerExecutePipeline(request *Request)*http.Response {
 	}
 	if res.ContentLength < 0 {
 		request.HttpRequest.TransferEncoding = []string{"chunked"}
+	}
+
+	// For HTTP/1.0 and Keep-Alive, sending the Connection: Keep-Alive response header is required
+	// because close is default (opposite of 1.1)
+	if keepAlive && !req.ProtoAtLeast(1, 1) {
+		res.Header.Add("Connection", "Keep-Alive")
 	}
 
 	// cleanup
