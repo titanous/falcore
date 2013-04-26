@@ -201,16 +201,16 @@ func (srv *Server) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	// Need to be really careful about how we use this property elsewhere.
 	request := newRequest(req, nil, time.Now())
 	res := srv.handlerExecutePipeline(request)
-	
+
 	// Copy headers
 	theHeader := wr.Header()
 	for key, header := range res.Header {
 		theHeader[key] = header
 	}
-	
+
 	// Write headers
 	wr.WriteHeader(res.StatusCode)
-	
+
 	// Write Body
 	request.startPipelineStage("server.ResponseWrite")
 	if res.Body != nil {
@@ -280,7 +280,7 @@ func (srv *Server) handler(c net.Conn) {
 	//Debug("%s Processed %v requests on connection %v", srv.serverLogPrefix(), reqCount, c.RemoteAddr())
 }
 
-func (srv *Server) handlerExecutePipeline(request *Request, boolean keepAlive)*http.Response {
+func (srv *Server) handlerExecutePipeline(request *Request, boolean keepAlive) *http.Response {
 	var res *http.Response
 	// execute the pipeline
 	if res = srv.Pipeline.execute(request); res == nil {
