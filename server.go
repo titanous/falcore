@@ -301,10 +301,10 @@ func (srv *Server) handlerExecutePipeline(request *Request, keepAlive bool) *htt
 	// Specifically, the android http client waits forever if there's no
 	// content-length instead of assuming zero at the end of headers. der.
 	if res.ContentLength == 0 && len(res.TransferEncoding) == 0 && !((res.StatusCode-100 < 100) || res.StatusCode == 204 || res.StatusCode == 304) {
-		request.HttpRequest.TransferEncoding = []string{"identity"}
+		res.TransferEncoding = []string{"identity"}
 	}
 	if res.ContentLength < 0 {
-		request.HttpRequest.TransferEncoding = []string{"chunked"}
+		res.TransferEncoding = []string{"chunked"}
 	}
 
 	// For HTTP/1.0 and Keep-Alive, sending the Connection: Keep-Alive response header is required
