@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -301,7 +302,12 @@ func (srv *Server) handlerExecutePipeline(request *Request, keepAlive bool) *htt
 	// content length to write if it was 0.
 	// Specifically, the android http client waits forever if there's no
 	// content-length instead of assuming zero at the end of headers. der.
-	if res.ContentLength == 0 && len(res.TransferEncoding) == 0 && !((res.StatusCode-100 < 100) || res.StatusCode == 204 || res.StatusCode == 304) {
+	if res.Body == nil {
+		res.ContentLength = 0
+		res.TransferEncoding = []string{"identity"}
+		res.Body = ioutil.NopCloser(bytes.NewBuffer([]byte{}))
+	} else if res.ContentLength == 0 && len(res.TransferEncoding) == 0 && !((res.StatusCode-100 < 100) || res.StatusCode == 204 || res.StatusCode == 304) {
+		fmt.Printf("%T -> %v", res.Body, res.Body)
 		// the following is copied from net/http/transfer.go
 		// in the std lib, this is only applied to a request.  we need it on a response
 

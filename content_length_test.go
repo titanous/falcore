@@ -20,6 +20,7 @@ var contentLengthTestData = []struct {
 	{"/chunked", []byte("ABC"), -1, -1, true},
 	{"/zero", []byte(""), 0, 0, false},
 	{"/unset", []byte("ABC"), 0, -1, true},
+	{"/nil_body", nil, 0, 0, false},
 }
 
 func TestContentLength(t *testing.T) {
@@ -29,7 +30,11 @@ func TestContentLength(t *testing.T) {
 	pipeline.Upstream.PushBack(NewRequestFilter(func(req *Request) *http.Response {
 		for _, entry := range contentLengthTestData {
 			if entry.path == req.HttpRequest.URL.Path {
-				return SimpleResponse(req.HttpRequest, 200, nil, entry.resContentLength, bytes.NewBuffer(entry.body))
+				var body io.Reader
+				if entry.body != nil {
+					body = bytes.NewBuffer(entry.body)
+				}
+				return SimpleResponse(req.HttpRequest, 200, nil, entry.resContentLength, body)
 			}
 		}
 		panic("Thing not found")
