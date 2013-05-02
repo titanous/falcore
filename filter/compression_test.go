@@ -169,7 +169,6 @@ func ctget(p string, accept string) (r *http.Response, err error) {
 		req.Write(conn)
 		buf := bufio.NewReader(conn)
 		r, err = http.ReadResponse(buf, req)
-		fmt.Println(r.Header)
 	}
 	return
 }
