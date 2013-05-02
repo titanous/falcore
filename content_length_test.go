@@ -3,18 +3,18 @@ package falcore
 import (
 	// "bufio"
 	"bytes"
-	"io"
 	"fmt"
+	"io"
 	"net/http"
 	"testing"
 )
 
 var contentLengthTestData = []struct {
-	path            string
-	body []byte
-	resContentLength int64 // what to send in the response
+	path                  string
+	body                  []byte
+	resContentLength      int64 // what to send in the response
 	expectedContentLength int64 // what the client should expect
-	chunked bool
+	chunked               bool
 }{
 	{"/basic", []byte("ABC"), 3, 3, false},
 	{"/chunked", []byte("ABC"), -1, -1, true},
@@ -26,7 +26,7 @@ func TestContentLength(t *testing.T) {
 	// Startup a basic server and get the port
 	pipeline := NewPipeline()
 	srv := NewServer(0, pipeline)
-	pipeline.Upstream.PushBack(NewRequestFilter(func(req *Request)*http.Response {
+	pipeline.Upstream.PushBack(NewRequestFilter(func(req *Request) *http.Response {
 		for _, entry := range contentLengthTestData {
 			if entry.path == req.HttpRequest.URL.Path {
 				return SimpleResponse(req.HttpRequest, 200, nil, entry.resContentLength, bytes.NewBuffer(entry.body))
@@ -42,12 +42,12 @@ func TestContentLength(t *testing.T) {
 
 	// Connect and make some requests
 	c := new(http.Client)
-	for _, test := range  contentLengthTestData {
+	for _, test := range contentLengthTestData {
 		res, err := c.Get(fmt.Sprintf("http://localhost:%v%v", serverPort, test.path))
 		if err != nil || res == nil {
 			t.Fatal(fmt.Sprintf("%v Couldn't get req: %v", test.path, err))
 		}
-		
+
 		var isChunked bool = res.TransferEncoding != nil && len(res.TransferEncoding) > 0 && res.TransferEncoding[0] == "chunked"
 		if test.chunked {
 			if !isChunked {
@@ -61,14 +61,14 @@ func TestContentLength(t *testing.T) {
 				t.Errorf("%v Incorrect content length. Expected: %v Got: %v", test.path, test.expectedContentLength, res.ContentLength)
 			}
 		}
-		
+
 		bodyBuf := new(bytes.Buffer)
 		io.Copy(bodyBuf, res.Body)
 		body := bodyBuf.Bytes()
 		if !bytes.Equal(body, test.body) {
 			t.Errorf("%v Body mismatch.\n\tExpecting:\n\t%v\n\tGot:\n\t%v", test.path, test.body, body)
 		}
-		
+
 		res.Body.Close()
 	}
 
