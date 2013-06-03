@@ -2,12 +2,13 @@ package filter
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/fitstar/falcore"
 	"io"
 	"net"
 	"net/http"
+	"sync"
 	"time"
-	"fmt"
 )
 
 type passThruReadCloser struct {
@@ -17,17 +18,22 @@ type passThruReadCloser struct {
 
 type Upstream struct {
 	// Name, if set, is used in logging and request stats
-	Name string
+	Name      string
 	Transport *UpstreamTransport
 	// Will ignore https on the incoming request and always upstream http
 	ForceHttp bool
 	// Ping URL Path-only for checking upness
 	PingPath string
+	// Throttling
+	throttleC        *sync.Cond
+	throttleMax      int64
+	throttleInFlight int64
 }
 
 func NewUpstream(transport *UpstreamTransport) *Upstream {
 	u := new(Upstream)
 	u.Transport = transport
+	u.throttleC = sync.NewCond(new(sync.Mutex))
 	return u
 }
 
@@ -38,6 +44,22 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	if u.Name != "" {
 		request.CurrentStage.Name = fmt.Sprintf("%s[%s]", request.CurrentStage.Name, u.Name)
 	}
+
+	// Throttle
+	// Wait for an opening, then increment in flight counter
+	throttleC.L.Lock()
+	for throttleMax > 0 && throttleInFlight >= throttleMax {
+		throttleC.Wait()
+	}
+	throttleInFlight += 1
+	throttleC.L.Unlock()
+	// Decrement and signal when done
+	defer func() {
+		throttleC.L.Lock()
+		throttleInFlight -= 1
+		throttleC.Signal()
+		throttleC.L.Unlock()
+	}()
 
 	// Force the upstream to use http 
 	if u.ForceHttp || req.URL.Scheme == "" {
@@ -104,6 +126,20 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	}
 	falcore.Debug("%s %s [%s] [%s] %s s=%d Time=%.4f", request.ID, u.Name, req.Method, u.Transport.host, req.URL, res.StatusCode, diff)
 	return
+}
+
+func (u *Upstream) SetMaxConcurrent(max int64) {
+	throttleC.L.Lock()
+	throttleMax = max
+	throttleC.Broadcast()
+	throttleC.L.Unlock()
+}
+
+func (u *Upstream) MaxConcurrent() int64 {
+	throttleC.L.Lock()
+	max := throttleMax
+	throttleC.L.Unlock()
+	return max
 }
 
 func (u *Upstream) ping() (up bool, ok bool) {
