@@ -25,7 +25,7 @@ func main() {
 	server.CompletionCallback = reqCB
 
 	// start the server
-	// this is normally blocking forever unless you send lifecycle commands 
+	// this is normally blocking forever unless you send lifecycle commands
 	if err := server.ListenAndServe(); err != nil {
 		fmt.Println("Could not start server:", err)
 	}
@@ -51,5 +51,5 @@ func (f helloFilter) FilterRequest(req *falcore.Request) *http.Response {
 }
 
 var reqCB = func(req *falcore.Request, res *http.Response) {
-	req.Trace() // Prints detailed stats about the request to the log
+	req.Trace(res) // Prints detailed stats about the request to the log
 }

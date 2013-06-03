@@ -61,7 +61,7 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 		throttleC.L.Unlock()
 	}()
 
-	// Force the upstream to use http 
+	// Force the upstream to use http
 	if u.ForceHttp || req.URL.Scheme == "" {
 		req.URL.Scheme = "http"
 		req.URL.Host = req.Host
