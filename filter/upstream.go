@@ -47,18 +47,18 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 
 	// Throttle
 	// Wait for an opening, then increment in flight counter
-	throttleC.L.Lock()
-	for throttleMax > 0 && throttleInFlight >= throttleMax {
-		throttleC.Wait()
+	u.throttleC.L.Lock()
+	for u.throttleMax > 0 && u.throttleInFlight >= u.throttleMax {
+		u.throttleC.Wait()
 	}
-	throttleInFlight += 1
-	throttleC.L.Unlock()
+	u.throttleInFlight += 1
+	u.throttleC.L.Unlock()
 	// Decrement and signal when done
 	defer func() {
-		throttleC.L.Lock()
-		throttleInFlight -= 1
-		throttleC.Signal()
-		throttleC.L.Unlock()
+		u.throttleC.L.Lock()
+		u.throttleInFlight -= 1
+		u.throttleC.Signal()
+		u.throttleC.L.Unlock()
 	}()
 
 	// Force the upstream to use http
@@ -129,16 +129,16 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 }
 
 func (u *Upstream) SetMaxConcurrent(max int64) {
-	throttleC.L.Lock()
-	throttleMax = max
-	throttleC.Broadcast()
-	throttleC.L.Unlock()
+	u.throttleC.L.Lock()
+	u.throttleMax = max
+	u.throttleC.Broadcast()
+	u.throttleC.L.Unlock()
 }
 
 func (u *Upstream) MaxConcurrent() int64 {
-	throttleC.L.Lock()
-	max := throttleMax
-	throttleC.L.Unlock()
+	u.throttleC.L.Lock()
+	max := u.throttleMax
+	u.throttleC.L.Unlock()
 	return max
 }
 
