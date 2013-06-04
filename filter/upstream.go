@@ -28,6 +28,7 @@ type Upstream struct {
 	throttleC        *sync.Cond
 	throttleMax      int64
 	throttleInFlight int64
+	throttleQueue    int64
 }
 
 func NewUpstream(transport *UpstreamTransport) *Upstream {
@@ -48,9 +49,11 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	// Throttle
 	// Wait for an opening, then increment in flight counter
 	u.throttleC.L.Lock()
+	u.throttleQueue += 1
 	for u.throttleMax > 0 && u.throttleInFlight >= u.throttleMax {
 		u.throttleC.Wait()
 	}
+	u.throttleQueue -= 1
 	u.throttleInFlight += 1
 	u.throttleC.L.Unlock()
 	// Decrement and signal when done
@@ -140,6 +143,13 @@ func (u *Upstream) MaxConcurrent() int64 {
 	max := u.throttleMax
 	u.throttleC.L.Unlock()
 	return max
+}
+
+func (u *Upstream) QueueLength() int64 {
+	u.throttleC.L.Lock()
+	ql := u.throttleQueue
+	u.throttleC.L.Unlock()
+	return ql
 }
 
 func (u *Upstream) ping() (up bool, ok bool) {
