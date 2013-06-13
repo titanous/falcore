@@ -22,25 +22,23 @@ func (srv *Server) setupNonBlockingListener(err error, l *net.TCPListener) error
 	return nil
 }
 
-
-func (srv *Server) cycleNonBlock(c net.Conn) {
-	if srv.sendfile {
-		if tcpC, ok := c.(*net.TCPConn); ok {
-			// Disable TCP_CORK/TCP_NOPUSH
-			tcpC.SetNoDelay(true)
-			// For TCP_NOPUSH, we need to force flush
-			c.Write([]byte{})
-			// Re-enable TCP_CORK/TCP_NOPUSH
-			tcpC.SetNoDelay(false)
-		}
-	}
-}
-
-func (s *Server) setupNonBlockOptions() {
+// Used NoDelay (Nagle's algorithm) where available
+func (srv *Server) setNoDelay(c net.Conn, noDelay bool)bool {
 	switch runtime.GOOS {
 	case "linux", "freebsd", "darwin":
-		s.sendfile = true
+		if tcpC, ok := c.(*net.TCPConn); ok {
+			if noDelay {
+				// Disable TCP_CORK/TCP_NOPUSH
+				tcpC.SetNoDelay(true)
+				// For TCP_NOPUSH, we need to force flush
+				c.Write([]byte{})
+			} else {
+				// Re-enable TCP_CORK/TCP_NOPUSH
+				tcpC.SetNoDelay(false)
+			}
+		}
+		return true
 	default:
-		s.sendfile = false
+		return false
 	}
 }

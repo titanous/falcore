@@ -26,8 +26,6 @@ type Server struct {
 	handlerWaitGroup   *sync.WaitGroup
 	logPrefix          string
 	AcceptReady        chan int
-	sendfile           bool
-	sockOpt            int
 	bufferPool         *BufferPool
 }
 
@@ -41,8 +39,6 @@ func NewServer(port int, pipeline *Pipeline) *Server {
 	s.AcceptReady = make(chan int, 1)
 	s.handlerWaitGroup = new(sync.WaitGroup)
 	s.logPrefix = fmt.Sprintf("%d", syscall.Getpid())
-
-	s.setupNonBlockOptions()
 
 	// buffer pool for reusing connection bufio.Readers
 	s.bufferPool = NewBufferPool(100, 8192)
@@ -294,15 +290,17 @@ func (srv *Server) handlerExecutePipeline(request *Request) *http.Response {
 	return res
 }
 
-func (srv *Server) handlerWriteResponse(request *Request, res *http.Response, c io.WriteCloser) {
+func (srv *Server) handlerWriteResponse(request *Request, res *http.Response, c net.Conn) {
 	request.startPipelineStage("server.ResponseWrite")
 	request.CurrentStage.Type = PipelineStageTypeOverhead
-	if srv.sendfile {
+
+	var nodelay = srv.setNoDelay(c, false)
+	if nodelay {
 		res.Write(c)
-		if conn, ok := c.(net.Conn); ok {
-			srv.cycleNonBlock(conn)
-		}
+		srv.setNoDelay(c, true)
 	} else {
+		// NoDelay is not available.  Use a buffer to increase the chance
+		// of sending the whole response at once.
 		wbuf := bufio.NewWriter(c)
 		res.Write(wbuf)
 		wbuf.Flush()
