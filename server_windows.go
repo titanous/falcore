@@ -1,4 +1,5 @@
-// +build windows
+// +build windows 
+
 package falcore
 
 import (
@@ -12,4 +13,8 @@ func (srv *Server) setupNonBlockingListener(err error, l *net.TCPListener) error
 
 func (srv *Server) cycleNonBlock(c net.Conn) {
 	// nuthin
+}
+
+func (srv *Server) setupNonBlockOptions() {
+	// nope
 }

@@ -1,9 +1,11 @@
 // +build !windows
+// +build !go1.1
 
 package falcore
 
 import (
 	"net"
+	"runtime"
 	"syscall"
 )
 
@@ -25,6 +27,8 @@ func (srv *Server) setupNonBlockingListener(err error, l *net.TCPListener) error
 	return nil
 }
 
+// Backwards support for go1.0
+// Go1.1 does not require special code for this
 func (srv *Server) cycleNonBlock(c net.Conn) {
 	if srv.sendfile {
 		if tcpC, ok := c.(*net.TCPConn); ok {
@@ -40,5 +44,21 @@ func (srv *Server) cycleNonBlock(c net.Conn) {
 				syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, srv.sockOpt, 1)
 			}
 		}
+	}
+}
+
+func (s *Server) setupNonBlockOptions() {
+	// openbsd/netbsd don't have TCP_NOPUSH so it's likely sendfile will be slower
+	// without these socket options, just enable for linux, mac and freebsd.
+	// TODO (Graham) windows has TransmitFile zero-copy mechanism, try to use it
+	switch runtime.GOOS {
+	case "linux":
+		s.sendfile = true
+		s.sockOpt = 0x3 // syscall.TCP_CORK
+	case "freebsd", "darwin":
+		s.sendfile = true
+		s.sockOpt = 0x4 // syscall.TCP_NOPUSH
+	default:
+		s.sendfile = false
 	}
 }

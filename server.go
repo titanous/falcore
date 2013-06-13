@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"runtime"
 	"strconv"
 	"sync"
 	"syscall"
@@ -43,19 +42,7 @@ func NewServer(port int, pipeline *Pipeline) *Server {
 	s.handlerWaitGroup = new(sync.WaitGroup)
 	s.logPrefix = fmt.Sprintf("%d", syscall.Getpid())
 
-	// openbsd/netbsd don't have TCP_NOPUSH so it's likely sendfile will be slower
-	// without these socket options, just enable for linux, mac and freebsd.
-	// TODO (Graham) windows has TransmitFile zero-copy mechanism, try to use it
-	switch runtime.GOOS {
-	case "linux":
-		s.sendfile = true
-		s.sockOpt = 0x3 // syscall.TCP_CORK
-	case "freebsd", "darwin":
-		s.sendfile = true
-		s.sockOpt = 0x4 // syscall.TCP_NOPUSH
-	default:
-		s.sendfile = false
-	}
+	s.setupNonBlockOptions()
 
 	// buffer pool for reusing connection bufio.Readers
 	s.bufferPool = NewBufferPool(100, 8192)
@@ -201,16 +188,16 @@ func (srv *Server) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	// Need to be really careful about how we use this property elsewhere.
 	request := newRequest(req, nil, time.Now())
 	res := srv.handlerExecutePipeline(request)
-	
+
 	// Copy headers
 	theHeader := wr.Header()
 	for key, header := range res.Header {
 		theHeader[key] = header
 	}
-	
+
 	// Write headers
 	wr.WriteHeader(res.StatusCode)
-	
+
 	// Write Body
 	request.startPipelineStage("server.ResponseWrite")
 	if res.Body != nil {
@@ -280,7 +267,7 @@ func (srv *Server) handler(c net.Conn) {
 	//Debug("%s Processed %v requests on connection %v", srv.serverLogPrefix(), reqCount, c.RemoteAddr())
 }
 
-func (srv *Server) handlerExecutePipeline(request *Request)*http.Response {
+func (srv *Server) handlerExecutePipeline(request *Request) *http.Response {
 	var res *http.Response
 	// execute the pipeline
 	if res = srv.Pipeline.execute(request); res == nil {
