@@ -2,12 +2,13 @@ package filter
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/fitstar/falcore"
 	"io"
 	"net"
 	"net/http"
+	"sync"
 	"time"
-	"fmt"
 )
 
 type passThruReadCloser struct {
@@ -17,17 +18,23 @@ type passThruReadCloser struct {
 
 type Upstream struct {
 	// Name, if set, is used in logging and request stats
-	Name string
+	Name      string
 	Transport *UpstreamTransport
 	// Will ignore https on the incoming request and always upstream http
 	ForceHttp bool
 	// Ping URL Path-only for checking upness
 	PingPath string
+	// Throttling
+	throttleC        *sync.Cond
+	throttleMax      int64
+	throttleInFlight int64
+	throttleQueue    int64
 }
 
 func NewUpstream(transport *UpstreamTransport) *Upstream {
 	u := new(Upstream)
 	u.Transport = transport
+	u.throttleC = sync.NewCond(new(sync.Mutex))
 	return u
 }
 
@@ -39,7 +46,25 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 		request.CurrentStage.Name = fmt.Sprintf("%s[%s]", request.CurrentStage.Name, u.Name)
 	}
 
-	// Force the upstream to use http 
+	// Throttle
+	// Wait for an opening, then increment in flight counter
+	u.throttleC.L.Lock()
+	u.throttleQueue += 1
+	for u.throttleMax > 0 && u.throttleInFlight >= u.throttleMax {
+		u.throttleC.Wait()
+	}
+	u.throttleQueue -= 1
+	u.throttleInFlight += 1
+	u.throttleC.L.Unlock()
+	// Decrement and signal when done
+	defer func() {
+		u.throttleC.L.Lock()
+		u.throttleInFlight -= 1
+		u.throttleC.Signal()
+		u.throttleC.L.Unlock()
+	}()
+
+	// Force the upstream to use http
 	if u.ForceHttp || req.URL.Scheme == "" {
 		req.URL.Scheme = "http"
 		req.URL.Host = req.Host
@@ -104,6 +129,27 @@ func (u *Upstream) FilterRequest(request *falcore.Request) (res *http.Response) 
 	}
 	falcore.Debug("%s %s [%s] [%s] %s s=%d Time=%.4f", request.ID, u.Name, req.Method, u.Transport.host, req.URL, res.StatusCode, diff)
 	return
+}
+
+func (u *Upstream) SetMaxConcurrent(max int64) {
+	u.throttleC.L.Lock()
+	u.throttleMax = max
+	u.throttleC.Broadcast()
+	u.throttleC.L.Unlock()
+}
+
+func (u *Upstream) MaxConcurrent() int64 {
+	u.throttleC.L.Lock()
+	max := u.throttleMax
+	u.throttleC.L.Unlock()
+	return max
+}
+
+func (u *Upstream) QueueLength() int64 {
+	u.throttleC.L.Lock()
+	ql := u.throttleQueue
+	u.throttleC.L.Unlock()
+	return ql
 }
 
 func (u *Upstream) ping() (up bool, ok bool) {

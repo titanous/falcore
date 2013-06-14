@@ -48,6 +48,7 @@ func (srv *Server) setNoDelay(c net.Conn, noDelay bool) bool {
 				// f is a copy.  must be closed
 				defer f.Close()
 				fd := int(f.Fd())
+
 				if noDelay {
 					// Disable TCP_CORK/TCP_NOPUSH
 					syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, sockOpt, 0)
@@ -57,6 +58,7 @@ func (srv *Server) setNoDelay(c net.Conn, noDelay bool) bool {
 					// Re-enable TCP_CORK/TCP_NOPUSH
 					syscall.SetsockoptInt(fd, syscall.IPPROTO_TCP, sockOpt, 1)
 				}
+				syscall.SetNonblock(fd, true)
 			}
 		}
 		return true
