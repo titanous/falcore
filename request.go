@@ -53,7 +53,7 @@ type Request struct {
 }
 
 // Used internally to create and initialize a new request.
-func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Request {
+func NewRequest(request *http.Request, conn net.Conn, startTime time.Time) *Request {
 	fReq := new(Request)
 	fReq.Context = make(map[string]interface{})
 	fReq.HttpRequest = request
@@ -86,7 +86,7 @@ func newRequest(request *http.Request, conn net.Conn, startTime time.Time) *Requ
 // The PipelineStageStats is completed in the returned Request
 // The falcore.Request.Connection and falcore.Request.RemoteAddr are nil
 func TestWithRequest(request *http.Request, filter RequestFilter, context map[string]interface{}) (*Request, *http.Response) {
-	r := newRequest(request, nil, time.Now())
+	r := NewRequest(request, nil, time.Now())
 	if context == nil {
 		context = make(map[string]interface{})
 	}

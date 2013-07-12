@@ -202,7 +202,7 @@ func (srv *Server) sentinel(c net.Conn, connClosed chan int) {
 func (srv *Server) ServeHTTP(wr http.ResponseWriter, req *http.Request) {
 	// We can't get the connection in this case.
 	// Need to be really careful about how we use this property elsewhere.
-	request := newRequest(req, nil, time.Now())
+	request := NewRequest(req, nil, time.Now())
 	res := srv.handlerExecutePipeline(request, false)
 
 	// Copy headers
@@ -250,7 +250,7 @@ func (srv *Server) handler(c net.Conn) {
 			} else if strings.ToLower(req.Header.Get("Connection")) != "keep-alive" {
 				keepAlive = false
 			}
-			request := newRequest(req, c, startTime)
+			request := NewRequest(req, c, startTime)
 			reqCount++
 
 			pssInit := new(PipelineStageStat)
