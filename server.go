@@ -333,7 +333,7 @@ func (srv *Server) handlerExecutePipeline(request *Request, keepAlive bool) *htt
 	// For HTTP/1.0 and Keep-Alive, sending the Connection: Keep-Alive response header is required
 	// because close is default (opposite of 1.1)
 	if keepAlive && !request.HttpRequest.ProtoAtLeast(1, 1) {
-		res.Header.Add("Connection", "Keep-Alive")
+		res.Header.Set("Connection", "Keep-Alive")
 	}
 
 	// cleanup
