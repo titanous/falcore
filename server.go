@@ -30,7 +30,8 @@ type Server struct {
 	logPrefix          string
 	AcceptReady        chan int
 	bufferPool         *BufferPool
-	writeBufferPool *WriteBufferPool
+	writeBufferPool    *WriteBufferPool
+	PanicHandler       func(conn net.Conn, err interface{})
 }
 
 type RequestCompletionCallback func(req *Request, res *http.Response)
@@ -362,6 +363,11 @@ func (srv *Server) requestFinished(request *Request, res *http.Response) {
 }
 
 func (srv *Server) connectionFinished(c net.Conn, closeChan chan int) {
+	if srv.PanicHandler != nil {
+		if err := recover(); err != nil {
+			srv.PanicHandler(c, err)
+		}
+	}
 	c.Close()
 	close(closeChan)
 	srv.handlerWaitGroup.Done()
