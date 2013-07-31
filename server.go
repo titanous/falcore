@@ -31,6 +31,7 @@ type Server struct {
 	AcceptReady        chan struct{}
 	bufferPool         *BufferPool
 	writeBufferPool    *WriteBufferPool
+	PanicHandler       func(conn net.Conn, err interface{})
 }
 
 type RequestCompletionCallback func(req *Request, res *http.Response)
@@ -362,6 +363,9 @@ func (srv *Server) requestFinished(request *Request, res *http.Response) {
 }
 
 func (srv *Server) connectionFinished(c net.Conn, closeChan chan struct{}) {
+	if err := recover(); err != nil && srv.PanicHandler != nil {
+		srv.PanicHandler(c, err)
+	}
 	c.Close()
 	close(closeChan)
 	srv.handlerWaitGroup.Done()
