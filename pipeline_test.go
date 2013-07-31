@@ -10,7 +10,7 @@ import (
 
 func validGetRequest() *Request {
 	tmp, _ := http.NewRequest("GET", "/hello", bytes.NewBuffer(make([]byte, 0)))
-	return newRequest(tmp, nil, time.Now())
+	return NewRequest(tmp, nil, time.Now())
 }
 
 var stageTrack *list.List
