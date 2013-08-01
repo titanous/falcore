@@ -153,6 +153,7 @@ accept:
 			if ope, ok := e.(*net.OpError); ok {
 				if !(ope.Timeout() && ope.Temporary()) {
 					Error("%s SERVER Accept Error: %v", srv.serverLogPrefix(), ope)
+					os.Exit(1)
 				}
 			} else {
 				Error("%s SERVER Accept Error: %v", srv.serverLogPrefix(), e)
