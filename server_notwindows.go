@@ -9,19 +9,6 @@ import (
 	"syscall"
 )
 
-// only valid on non-windows
-func (srv *Server) setupNonBlockingListener(err error, l *net.TCPListener) error {
-	// FIXME: File() returns a copied pointer.  we're leaking it.  probably doesn't matter
-	if srv.listenerFile, err = l.File(); err != nil {
-		return err
-	}
-	fd := int(srv.listenerFile.Fd())
-	if e := syscall.SetNonblock(fd, true); e != nil {
-		return e
-	}
-	return nil
-}
-
 // Backwards support for go1.0
 // Go1.1 does not require special code for this
 func (srv *Server) setNoDelay(c net.Conn, noDelay bool) bool {

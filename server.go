@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,7 +25,6 @@ type Server struct {
 	Pipeline           *Pipeline
 	CompletionCallback RequestCompletionCallback
 	listener           net.Listener
-	listenerFile       *os.File
 	stopAccepting      chan struct{}
 	handlerWaitGroup   *sync.WaitGroup
 	logPrefix          string
@@ -52,16 +52,15 @@ func NewServer(port int, pipeline *Pipeline) *Server {
 	return s
 }
 
-func (srv *Server) FdListen(fd int) error {
+func (srv *Server) FdListen(fd int, name string) error {
 	var err error
-	srv.listenerFile = os.NewFile(uintptr(fd), "")
-	if srv.listener, err = net.FileListener(srv.listenerFile); err != nil {
+	if srv.listener, err = net.FileListener(os.NewFile(uintptr(fd), name)); err != nil {
 		return err
 	}
 	if _, ok := srv.listener.(*net.TCPListener); !ok {
 		return errors.New("Broken listener isn't TCP")
 	}
-	return nil
+	return syscall.Close(fd)
 }
 
 func (srv *Server) socketListen() error {
@@ -76,9 +75,7 @@ func (srv *Server) socketListen() error {
 		return err
 	}
 	srv.listener = l
-	// setup listener to be non-blocking if we're not on windows.
-	// this is required for hot restart to work.
-	return srv.setupNonBlockingListener(err, l)
+	return nil
 }
 
 func (srv *Server) ListenAndServe() error {
@@ -93,8 +90,18 @@ func (srv *Server) ListenAndServe() error {
 	return srv.serve()
 }
 
-func (srv *Server) SocketFd() int {
-	return int(srv.listenerFile.Fd())
+func fcntl(fd int, cmd int, arg int) {
+	syscall.Syscall(syscall.SYS_FCNTL, uintptr(fd), uintptr(cmd), uintptr(arg))
+}
+
+func noCloseOnExec(fd int) {
+	fcntl(fd, syscall.F_SETFD, ^syscall.FD_CLOEXEC)
+}
+
+func (srv *Server) SocketFd() (int, string) {
+	fd := int(reflect.ValueOf(srv.listener).Elem().FieldByName("fd").Elem().FieldByName("sysfd").Int())
+	noCloseOnExec(fd)
+	return fd, fmt.Sprintf("tcp:%s->", srv.listener.Addr())
 }
 
 func (srv *Server) ListenAndServeTLS(certFile, keyFile string) error {
